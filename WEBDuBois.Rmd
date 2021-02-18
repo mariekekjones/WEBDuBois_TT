@@ -1,0 +1,167 @@
+---
+title: "WEB DuBois Challenge"
+author: "Marieke Jones"
+date: "2/16/2021"
+output: 
+  html_document:
+    keep_md: true
+---
+
+# Load the data
+
+```{r message=FALSE, results='hide', warning=FALSE}
+library(tidyverse)
+```
+
+Try to re-create WEB Du Bois's [original income figure](https://github.com/ajstarks/dubois-data-portraits/blob/master/challenge/challenge05/original-plate-31.jpg)
+
+Read in the income data
+```{r}
+income <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-02-16/income.csv')
+income
+```
+
+Looks like the original plots the types of expenses so we should `pivot_longer()`
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income")
+```
+
+Yes, that is better
+
+Now try a basic plot
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense))
+```
+
+Already close to the original, but the y-axis is upside down, so reverse that
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense)) +
+  scale_y_discrete(limits = rev)
+```
+
+Change the order of the expenses and the class to match those in the original
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense))
+
+# now plot
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense)) +
+  scale_y_discrete(limits = rev)
+```
+
+Change the colors to match the original
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense)) +
+  scale_y_discrete(limits = rev) +
+  scale_fill_manual(values = c("azure2", "steelblue3", "lightpink", "mediumpurple4", "black"))
+```
+
+Change the spacing between the bars and remove axes labels and change theme
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense), width = .4) +
+  scale_y_discrete(limits = rev) +
+  scale_fill_manual(values = c("azure2", "steelblue3", "lightpink", "mediumpurple4", "black")) +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+
+Add annotations in each segment. To do so, replace NA in Percent of Income variable with 0 first
+
+```{r}
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  mutate(Percent_of_Income = replace_na(Percent_of_Income, 0))
+
+# now plot
+income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  mutate(Percent_of_Income = replace_na(Percent_of_Income, 0)) %>%
+  ggplot(aes(Percent_of_Income, Class)) + 
+  geom_col(aes(fill = Expense), width = .4) +
+  scale_y_discrete(limits = rev) +
+  scale_fill_manual(values = c("azure2", "steelblue3", "lightpink", "mediumpurple4", "black")) +
+  theme_classic() +
+  labs(x = "", y = "") +
+  geom_text(aes(label = paste0(Percent_of_Income, " %")), size = 3, position = position_stack(vjust = .5), color = rep(c("white", rep("black", 4)), 7))
+```
+
+Add the lines connecting each portion of the bar and finalize details (background color, title, etc.)
+
+```{r}
+plotdata <- income %>%
+  pivot_longer(Rent:Other, names_to = "Expense", values_to = "Percent_of_Income") %>%
+  mutate(Expense = factor(Expense, levels = c("Other", "Tax", "Clothes", "Food", "Rent"))) %>%
+  mutate(Class = factor(Class, levels = c("$100-200", "$200-300", "$300-400", "$400-500", "$500-750", "$750-1000", "Over $1000"))) %>%
+  arrange(Class, desc(Expense)) %>%
+  mutate(Percent_of_Income = replace_na(Percent_of_Income, 0)) 
+plotdata
+  
+# create cumsum column and make cumsum NA for Other
+plotdata <- plotdata %>%
+  group_by(Class) %>%
+  mutate(Cumulative_perc = cumsum(Percent_of_Income)) %>% ungroup() %>%
+  mutate(Cumulative_perc = ifelse(Expense == "Other", NA, Cumulative_perc))
+
+# take a look
+plotdata
+
+# now plot
+plotdata %>%
+  ggplot() + 
+  geom_col(aes(Percent_of_Income, Class, fill = Expense), width = .4) +
+  scale_y_discrete(limits = rev) +
+  geom_path(aes(Cumulative_perc, Class, group = Expense), lwd = .2) +
+  scale_fill_manual(values = c("azure2", "steelblue3", "lightpink", "mediumpurple4", "black")) +
+  theme_classic() +
+  labs(x = "", y = "") +
+  geom_text(aes(Percent_of_Income, Class, label = paste0(Percent_of_Income, " %")), size = 3, position = position_stack(vjust = .5), color = rep(c("white", rep("black", 4)), 7)) + 
+  theme(
+  plot.background=element_rect(fill = "antiquewhite"),
+  panel.background = element_rect(fill = 'antiquewhite'),
+  legend.background = element_rect(fill = "antiquewhite", color = NA),
+  axis.line = element_blank()) +
+  labs(title = "INCOME AND EXPENDITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA., U.S.A.", caption = "reproducing WEB DuBois's original data graphic using ggplot2")
+
+# save the final plot
+ggsave(filename = "dubois_challenge.png", height = 8, width = 12)
+```
